@@ -1,0 +1,44 @@
+version: "3.3"
+
+services:
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      # Synchronisation de l'heure avec le système
+      - /etc/localtime:/etc/localtime:ro
+      # Volume vital : permet à Portainer de piloter le Docker du Raspberry Pi
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Volume de données : pour stocker ton mot de passe admin et tes configs
+      - portainer_data:/data
+    restart: unless-stopped
+
+    # Si tu utilises Traefik :
+    # 1. Commente la section "ports" ci-dessus (mets des # devant).
+    # 2. Décommente la section "labels" ci-dessous (enlève les #).
+    
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.homepage.rule=Host(`${DOMAIN_PORTAINER}`)"
+      - "traefik.http.routers.homepage.entrypoints=websecure"
+      - "traefik.http.routers.homepage.tls.certresolver=myresolver"
+      - "traefik.http.services.homepage.loadbalancer.server.port=9000"
+      # On nomme le service "portainer" et on met le port 9000
+      - "traefik.http.routers.portainer.service=portainer"
+
+    # ==============================================================================
+    # 🌐 RÉSEAU
+    # ==============================================================================
+    networks:
+      - proxy-net
+
+# Création du volume de stockage des données
+volumes:
+  portainer_data:
+
+# Connexion au réseau externe
+networks:
+  proxy-net:
+    external: true

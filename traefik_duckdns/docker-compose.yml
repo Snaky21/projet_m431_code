@@ -1,0 +1,57 @@
+services:
+  duckdns:
+    image: lscr.io/linuxserver/duckdns:latest
+    container_name: duckdns
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - SUBDOMAINS=${DUCKDNS_SUBDOMAINS}
+      - TOKEN=${DUCKDNS_TOKEN}
+      - LOG_FILE=false
+    restart: unless-stopped
+
+  traefik:
+    image: traefik:v2.10
+    container_name: traefik
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - proxy-net
+    ports:
+      - "80:80"   # Obligatoire pour la redirection
+      - "443:443" # Le seul vrai point d'entrée
+      # PAS DE PORT 8080 ICI ! On le cache.
+    environment:
+      - DUCKDNS_TOKEN=${DUCKDNS_TOKEN}
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./letsencrypt:/letsencrypt
+    command:
+      - "--api.dashboard=true" # On active le dashboard
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false" # Sécurité : ne rien exposer par défaut
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      # Règle globale : Tout trafic HTTP devient HTTPS
+      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+      # SSL DuckDNS
+      - "--certificatesresolvers.myresolver.acme.dnschallenge=true"
+      - "--certificatesresolvers.myresolver.acme.dnschallenge.provider=duckdns"
+      - "--certificatesresolvers.myresolver.acme.email=${ACME_EMAIL}"
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+    labels:
+      # C'est ici qu'on expose le Dashboard via HTTPS sécurisé
+      - "traefik.enable=true"
+      - "traefik.http.routers.dashboard.rule=Host(`${DOMAIN_TRAEFIK}`)"
+      - "traefik.http.routers.dashboard.service=api@internal"
+      - "traefik.http.routers.dashboard.tls.certresolver=myresolver"
+      # Ajoute une protection par mot de passe (BasicAuth) est fortement recommandé ici
+      
+
+networks:
+  proxy-net:
+    external: true

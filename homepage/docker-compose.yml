@@ -1,0 +1,40 @@
+version: "3.3"
+
+services:
+  homepage:
+    image: ghcr.io/gethomepage/homepage:latest
+    container_name: homepage
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    volumes:
+      # Dossiers de configuration définis dans le .env
+      - ${CONFIG_DIR}:/app/config
+      - ${IMAGES_DIR}:/app/public/images
+      # Indispensable pour que Homepage puisse voir l'état de tes autres dockers
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: unless-stopped
+
+    # Si tu utilises Traefik :
+    # 1. Commente la section "ports" ci-dessus (mets des # devant).
+    # 2. Décommente la section "labels" ci-dessous (enlève les #).
+    
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.homepage.rule=Host(`${DOMAIN_HOMEPAGE}`)"
+      - "traefik.http.routers.homepage.entrypoints=websecure"
+      - "traefik.http.routers.homepage.tls.certresolver=myresolver"
+      - "traefik.http.services.homepage.loadbalancer.server.port=3000"
+
+    # ==============================================================================
+    # 🌐 RÉSEAU
+    # ==============================================================================
+    # Indispensable pour communiquer avec le Proxy
+    networks:
+      - proxy-net
+
+# On se connecte au réseau externe créé précédemment
+networks:
+  proxy-net:
+    external: true
