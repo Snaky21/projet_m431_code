@@ -5,6 +5,7 @@
   <img src="https://img.shields.io/badge/Traefik-24A1C1?style=for-the-badge&logo=traefik&logoColor=white" alt="Traefik">
   <img src="https://img.shields.io/badge/SSL-Let's%20Encrypt-003A70?style=for-the-badge&logo=letsencrypt&logoColor=white" alt="SSL">
   <img src="https://img.shields.io/badge/DuckDNS-Duck-orange?style=for-the-badge" alt="DuckDNS">
+  <img src="https://img.shields.io/badge/Wiki du projet-M431-green?style=for-the-badge&logo=github" alt="Wiki M431">
 </p>
 
 ## 📝 Présentation
