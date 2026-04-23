@@ -1,18 +1,6 @@
 services:
-  duckdns:
-    image: lscr.io/linuxserver/duckdns:latest
-    container_name: duckdns
-    environment:
-      - PUID=${PUID}
-      - PGID=${PGID}
-      - TZ=${TZ}
-      - SUBDOMAINS=${DUCKDNS_SUBDOMAINS}
-      - TOKEN=${DUCKDNS_TOKEN}
-      - LOG_FILE=false
-    restart: unless-stopped
-
   traefik:
-    image: traefik:v2.10
+    image: traefik:v3.6
     container_name: traefik
     restart: unless-stopped
     security_opt:
@@ -20,7 +8,7 @@ services:
     networks:
       - proxy-net
     ports:
-      - "80:80"   # Obligatoire pour la redirection
+      - "80:80" # Obligatoire pour la redirection
       - "443:443" # Le seul vrai point d'entrée
       # PAS DE PORT 8080 ICI ! On le cache.
     environment:
@@ -50,7 +38,7 @@ services:
       - "traefik.http.routers.dashboard.service=api@internal"
       - "traefik.http.routers.dashboard.tls.certresolver=myresolver"
       # Ajoute une protection par mot de passe (BasicAuth) est fortement recommandé ici
-      
+
 
 networks:
   proxy-net:
