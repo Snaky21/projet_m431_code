@@ -17,29 +17,65 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./letsencrypt:/letsencrypt
+      - ./certs:/certs:ro # Dossier pour les certificats locaux (.crt et .key)
     command:
       - "--api.dashboard=true" # On active le dashboard
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false" # Sécurité : ne rien exposer par défaut
+      
+      # Configuration pour lire les certificats locaux injectés via 'configs'
+      - "--providers.file.filename=/etc/traefik/dynamic.yml"
+      
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
+      
       # Règle globale : Tout trafic HTTP devient HTTPS
       - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
       - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
-      # SSL DuckDNS
+      
+      # SSL Let's Encrypt (DuckDNS)
       - "--certificatesresolvers.myresolver.acme.dnschallenge=true"
       - "--certificatesresolvers.myresolver.acme.dnschallenge.provider=duckdns"
       - "--certificatesresolvers.myresolver.acme.email=${ACME_EMAIL}"
       - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+    
     labels:
       # C'est ici qu'on expose le Dashboard via HTTPS sécurisé
       - "traefik.enable=true"
       - "traefik.http.routers.dashboard.rule=Host(`${DOMAIN_TRAEFIK}`)"
       - "traefik.http.routers.dashboard.service=api@internal"
+      
+      # ====================================================================
+      # CHOIX DU SSL : Décommenter l'option souhaitée
+      # ====================================================================
+      
+      # OPTION 1 : Let's Encrypt (Automatique, nécessite internet)
       - "traefik.http.routers.dashboard.tls.certresolver=myresolver"
+      
+      # OPTION 2 : Local/Manuel (Utilise les fichiers dans ./certs)
+      # - "traefik.http.routers.dashboard.tls=true"
+      
       # Ajoute une protection par mot de passe (BasicAuth) est fortement recommandé ici
+      # - "traefik.http.middlewares.auth.basicauth.users=admin:$$apr1$$..."
+      # - "traefik.http.routers.dashboard.middlewares=auth"
+
+    configs:
+      - source: traefik_local_tls
+        target: /etc/traefik/dynamic.yml
 
 
 networks:
   proxy-net:
     external: true
+
+# ==============================================================================
+# CONFIGURATION DYNAMIQUE VIRTUELLE
+# ==============================================================================
+configs:
+  traefik_local_tls:
+    content: |
+      tls:
+        certificates:
+          - certFile: "/certs/local.crt"
+            keyFile: "/certs/local.key"
+

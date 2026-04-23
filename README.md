@@ -59,9 +59,26 @@ cd ../homepage && docker-compose up -d
 ```
 
 ## ⚙️ Configuration SSL (Traefik)
-Le certificat SSL est généré automatiquement via Let's Encrypt en utilisant le **DNS Challenge** de DuckDNS. Cela permet :
-- De ne pas avoir besoin d'ouvrir le port 80 pour la validation.
-- De générer des certificats valides même pour des services internes non exposés.
+
+Le projet supporte deux modes SSL pour s'adapter à toutes les situations :
+
+### 🟢 Option 1 : Let's Encrypt (Automatique)
+Utilisée par défaut. Le certificat est généré via le **DNS Challenge** de DuckDNS.
+- **Avantages** : Certificat reconnu par tous les navigateurs (pas d'alerte de sécurité).
+- **Prérequis** : Nécessite une connexion internet et un token DuckDNS valide.
+
+### 🟡 Option 2 : SSL Local (Mode hors-ligne / Test)
+Permet d'utiliser des certificats auto-signés sans aucune connexion externe.
+- **Avantages** : Fonctionne sans internet, idéal pour le développement local.
+- **Mise en œuvre** :
+  1. Générez les certificats dans le dossier `traefik/certs` :
+     ```bash
+     mkdir -p traefik/certs && openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+       -keyout traefik/certs/local.key -out traefik/certs/local.crt \
+       -subj "/C=FR/ST=Paris/L=Paris/O=Formation/CN=*.duckdns.org"
+     ```
+  2. Dans `traefik/docker-compose.yml`, commentez l'Option 1 et décommentez l'Option 2 sous la section `labels`.
+  3. Relancez Traefik : `docker-compose up -d`.
 
 ## 📖 Documentation Détaillée
 Toutes les explications sur le fonctionnement de Traefik, les labels Docker et la structure du réseau sont disponibles sur le Wiki :
